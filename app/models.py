@@ -3,29 +3,43 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
-class Task(db.Model):
-    """Task model stored in PostgreSQL"""
-
-    __tablename__ = 'tasks'
+class Category(db.Model):
+    __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False, index=True)
-    description = db.Column(db.String(500), nullable=True)
-    completed = db.Column(db.Boolean, default=False)
-    due_date = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
-    category_id = db.Column(db.Integer, nullable=True, ForeignKey(""))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    color = db.Column(db.String(7), nullable=True)
+    # one category maps to several tasks
+    tasks = db.relationship("Task", back_populates="category")
 
     def to_dict(self):
-        """Convert to dictionary for JSON serialization"""
         return {
             'id': self.id,
-            'recipient': self.recipient,
-            'channel': self.channel,
-            'subject': self.subject,
-            'message': self.message,
-            'status': self.status,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'sent_at': self.sent_at.isoformat() if self.sent_at else None,
-            'error_message': self.error_message
+            'name': self.name,
+            'color': self.color
+        }
+
+
+class Task(db.Model):
+    __tablename__ = "tasks"
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    completed = db.Column(db.Boolean, default=False, nullable=False)
+    due_date = db.Column(db.DateTime, nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
+    category = db.relationship("Category", back_populates="tasks")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'completed': self.completed,
+            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'category_id': self.category_id,
+            'category': self.category.to_dict() if self.category else None,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
         }
